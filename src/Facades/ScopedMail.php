@@ -5,6 +5,13 @@ namespace Lacodix\LaravelScopedMailConfig\Facades;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Testing\Fakes\MailFake;
 
+/**
+ * @method static void resolveScopeUsing(null|callable $resolver)
+ *
+ * @see \Lacodix\LaravelScopedMailConfig\ScopedMailManager
+ * @see \Illuminate\Mail\MailManager
+ * @see \Illuminate\Support\Testing\Fakes\MailFake
+ */
 class ScopedMail extends Mail
 {
     protected static $cached = false;
