@@ -25,6 +25,10 @@ class MyModel extends Model implements HasMailConfig
             'password' => 'mypassword',
             'timeout' => 60,
             'local_domain' => null,
+            'from' => [
+                'address' => 'my@email.login',
+                'name' => 'myname',
+            ],
         ];
     }
 }

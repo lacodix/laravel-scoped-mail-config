@@ -44,6 +44,10 @@ class MyModel extends Model implements HasMailConfig
                 'password' => 'mypassword',
                 'timeout' => 60,
                 'local_domain' => null,
+                'from' => [
+                    'address' => 'my@email.login',
+                    'name' => 'myname',
+                ],
             ],
             'smtp2' => [
                 'transport' => 'smtp',
@@ -54,6 +58,10 @@ class MyModel extends Model implements HasMailConfig
                 'password' => 'mailgunpass',
                 'timeout' => 60,
                 'local_domain' => null,
+                'from' => [
+                    'address' => 'my@mailgun.sender',
+                    'name' => 'myname',
+                ],
             ],
         ];
     }
