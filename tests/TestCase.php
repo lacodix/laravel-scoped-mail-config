@@ -2,57 +2,18 @@
 
 namespace Tests;
 
-use Illuminate\Database\Capsule\Manager as Capsule;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Foundation\Testing\Concerns\InteractsWithViews;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Illuminate\Support\Str;
-use Lacodix\LaravelGlobalOrScope\LaravelGlobalOrScopeServiceProvider;
+use Illuminate\Support\Facades\Schema;
+use Lacodix\LaravelScopedMailConfig\Concerns\HasMailConfig;
+use Lacodix\LaravelScopedMailConfig\LaravelScopedMailConfigServiceProvider;
 
 abstract class TestCase extends \Orchestra\Testbench\TestCase
 {
     use LazilyRefreshDatabase;
     use InteractsWithViews;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $capsule = new Capsule;
-
-        $capsule->addConnection([
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'username' => 'root',
-            'password' => '',
-        ]);
-
-        $capsule->setAsGlobal();
-        $capsule->bootEloquent();
-
-        Capsule::schema()->create('posts', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->string('type');
-            $table->boolean('published');
-            $table->text('content');
-            $table->integer('counter');
-            $table->timestamps();
-        });
-
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Tests\\Database\\Factories\\'.Str::afterLast($modelName, '\\').'Factory'
-        );
-
-        Factory::guessModelNamesUsing(
-            fn (Factory $factory) => 'Tests\\Models\\'.Str::replaceLast(
-                'Factory',
-                '',
-                Str::afterLast($factory::class, '\\')
-            )
-        );
-    }
 
     /**
      * Get package providers.
@@ -63,24 +24,70 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected function getPackageProviders($app)
     {
         return [
-            LaravelGlobalOrScopeServiceProvider::class,
+            LaravelScopedMailConfigServiceProvider::class,
         ];
     }
 
-    /**
-     * Define environment setup.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return void
-     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Schema::create('users', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('email');
+            $table->string('username');
+            $table->string('password');
+            $table->string('remember_token')->default(null)->nullable();
+            $table->tinyInteger('is_active')->default(0);
+            $table->json('mail_config');
+        });
+
+        Schema::create('table', function (Blueprint $table) {
+            $table->increments('id');
+            $table->json('mail_config');
+        });
+    }
+
     protected function getEnvironmentSetUp($app)
     {
-        // Setup default database to use sqlite :memory:
-        $app['config']->set('database.default', 'testbench');
-        $app['config']->set('database.connections.testbench', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
+        $app['config']->set('auth.providers.users.model', AuthenticationTestUser::class);
+
+        $app['config']->set('auth.guards.api', [
+            'driver' => 'token',
+            'provider' => 'users',
+            'hash' => false,
         ]);
+    }
+}
+
+class AuthenticationTestUser extends Authenticatable implements HasMailConfig
+{
+    public $table = 'users';
+    public $timestamps = false;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var string[]
+     */
+    protected $guarded = [];
+
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var string[]
+     */
+    protected $hidden = [
+        'password', 'remember_token',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'mail_config' => 'array',
+    ];
+
+    public function getMailConfig(string $name): array
+    {
+        return $this->mail_config;
     }
 }

@@ -2,8 +2,6 @@
 
 namespace Lacodix\LaravelScopedMailConfig;
 
-use Illuminate\Database\Eloquent\Builder;
-use Lacodix\LaravelScopedMailConfig\Scopes\OrScope;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -14,14 +12,10 @@ class LaravelScopedMailConfigServiceProvider extends PackageServiceProvider
         $package->name('laravel-scoped-mail-config');
     }
 
-    public function boot(): void
+    public function register(): void
     {
-        parent::boot();
+        $this->app->bind('mail.scoped.manager', static fn ($app) => new ScopedMailManager($app));
 
-        Builder::macro(
-            'withGlobalOrScopes',
-            // @phpstan-ignore-next-line
-            fn (array $scopes = null) => $this->withGlobalScope(md5(serialize($scopes)), new OrScope($scopes))
-        );
+        parent::register();
     }
 }

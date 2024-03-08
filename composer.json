@@ -1,14 +1,15 @@
 {
     "name": "lacodix/laravel-scoped-mail-config",
-    "description": "A Laravel package to add possibility to use global scopes with an or operation in Eloquent Models.",
+    "description": "A package that enables user or tenant specific mail driver configuration.",
     "type": "laravel-package",
     "keywords": [
         "lacodix",
         "laravel",
-        "global",
-        "scopes",
-        "model",
-        "eloquent"
+        "mail",
+        "config",
+        "scope",
+        "dynamic",
+        "tenant"
     ],
     "homepage": "https://github.com/lacodix/laravel-scoped-mail-config",
     "license": "MIT",
@@ -41,8 +42,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Lacodix\\LaravelScopedMailConfig\\": "src",
-            "Lacodix\\LaravelScopedMailConfig\\Database\\Factories\\": "database/factories"
+            "Lacodix\\LaravelScopedMailConfig\\": "src"
         }
     },
     "autoload-dev": {
