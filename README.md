@@ -5,8 +5,14 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/lacodix/laravel-scoped-mail-config/style.yaml?branch=master&label=code%20style&style=flat-square)](https://github.com/lacodix/laravel-scoped-mail-config/actions?query=workflow%3Astyle+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/lacodix/laravel-scoped-mail-config.svg?style=flat-square)](https://packagist.org/packages/lacodix/laravel-scoped-mail-config)
 
-This package allows you to add global scopes to models combined with an or condition.
-It contains additional functionality to disable some or all or-scopes on the fly.
+This package makes it an ease to send mails with dynamic mail configuration. The mail configuration
+can be provided by any model or class, that implements our HasMailConfig Interface.
+
+With this in mind it is the perfect fit for multi tenancy packages like
+[Laravel-multitenancy](https://github.com/spatie/laravel-multitenancy) by spatie.
+
+It also offers the possibility to keep mail configs in user or team models or even if you just want to be able
+to offer your admin-user to set a dynamic mail configuration.
 
 ## Documentation
 
@@ -20,54 +26,56 @@ composer require lacodix/laravel-scoped-mail-config
 
 ## Basic Usage
 
-Just add the trait to your eloquent model and then you can use the addGlobalOrScopes method when booting.
+Just add our interface to your scope model
 
 ```php
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Scope;
-use Lacodix\LaravelGlobalOrScope\Traits\GlobalOrScope;
+use Lacodix\LaravelScopedMailConfig\Concerns\HasMailConfig;
 
-class Post extends Model
+class Tenant extends Model implements HasMailConfig
 {
-    use GlobalOrScope;
-
-    public static function booting(): void
-    {
-        static::addGlobalOrScopes([Scope1::class, Scope2::class]);
+    public function getMailConfig($name): array {
+        return [
+            'transport' => 'smtp',
+            'host' => 'my.smtp.server',
+            'port' => 587,
+            'encryption' => null,
+            'username' => 'my@email.login',
+            'password' => 'mypassword',
+            'timeout' => 60,
+            'local_domain' => null,
+            'from' => [
+                'address' => 'my@email.login',
+                'name' => 'myname',
+            ],
+        ];
     }
 }
+```
 
-class Scope1 implements Scope
+In your AppServiceProvider you now just need to inform the package how it shall resolve the mail configuration.
+By default the Package resolves the current authenticated user. So if you want to use user specific mail configuration
+then just skip this step.
+
+```
+use Lacodix\LaravelScopedMailConfig\Facades\ScopedMail;
+
+public function register(): void
 {
-    public function apply(Builder $builder, Model $model)
-    {
-        return $builder->whereNull('col1')->where('col2', 1);
-    }
+    ScopedMail::resolveScopeUsing(fn () => Tenant::getCurrentTenant());
 }
-
-class Scope2 implements Scope
-{
-    public function apply(Builder $builder, Model $model)
-    {
-        return $builder->where('col3', 2);
-    }
-}
-...
-Post::query()->where('user_id', 1000)->get();
 ```
 
-This results in running the following SQL Query
-```sql
-select * from "posts" where "user_id" = 1000 and (("col1" is null and "col2" = 1) or ("col3" = 2))
+Then you can send mails with this dynamic configuration just by using our facade like laravel Mail facade:
 ```
+ScopedMail::to('my@email.de')->send($mailable);
+```
+ScopedMail is just extending standard Mail facade, so there are all functionalities, that you already know from
+laravel [Mail](https://laravel.com/docs/mail)
 
-For temporary disabling you can use
-```php
-Post::query()->withoutGlobalOrScopes()->where('user_id', 1000)->get();
+Finally it is also possible to use this facade in tests
 ```
-what results in a simple
-```sql
-select * from "posts" where "user_id" = 1000
+ScopedMail::fake();
 ```
 
 ## Testing
