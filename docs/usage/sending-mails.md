@@ -80,3 +80,28 @@ ScopedMail::driver('smtp2')->to($request->user())->send(new OrderShipped());
 // This one uses the driver that is set up in your config('mail.default') - usually env var MAIL_MAILER 
 ScopedMail::to($request->user())->send(new OrderShipped()); 
 ```
+
+## Use the scoped config for core laravel functions
+
+Even when you use ScopedMail for all your manual mails, laravel core is still using the default 
+driver for functionalities like notifications. This is e.g. used in ResetPassword mails
+
+This might be your desired behaviour if you want to use a base mail configuration for all 
+core functionality and ScopedMail only for dedicated jobs, but sometimes you also need to 
+send core mails over ScopedMail - maybe if you set your settings via spatie settings package.
+
+In this cases you can just override the binding of the default mail manager. Just add the
+following lines to your AppServiceProvider boot method.
+
+```php
+public function boot(): void
+{
+    ...
+    
+    $this->app->bind(
+        \Illuminate\Contracts\Mail\Factory::class, 
+        static fn ($app) => new \Lacodix\LaravelScopedMailConfig\($app)
+    );
+}
+```
+
